@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario de Velas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 20px 0;
+        }
+        
+        .product-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #e9ecef;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+        }
+        
+        .product-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #333;
+            flex-grow: 1;
+        }
+        
+        .product-stock {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            background: #e3f2fd;
+            padding: 8px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .product-stock.low {
+            color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        input, select, textarea, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .notification {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .admin-section {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .dashboard-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .stats-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .stats-label {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        th {
+            background-color: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        
+        .cart-total {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: right;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            margin-top: 30px;
+        }
+        
+        .cart-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .remove-btn:hover {
+            background: #c82333;
+        }
+        
+        .vendor-info {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .vendor-info strong {
+            color: #28a745;
+        }
+        
+        @media (max-width: 768px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 20px;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏪 Sistema de Inventario de Velas</h1>
+            <p class="subtitle">Gestiona tus productos y pedidos de forma eficiente</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('cliente')">Cliente</button>
+            <button class="tab" onclick="switchTab('administrador')">Administrador</button>
+        </div>
+        
+        <!-- Sección Cliente -->
+        <div id="cliente-tab" class="tab-content active">
+            <div class="card">
+                <h2>📊 Inventario Actual</h2>
+                <div class="products-grid" id="inventory-grid">
+                    <!-- Tarjetas de productos cargadas por JavaScript -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📦 Hacer Pedido</h2>
+                <div id="notification"></div>
+                <form id="order-form">
+                    <!-- VENDEDOR -->
+                    <div class="form-group">
+                        <select id="vendedor" required onchange="cargarDatosVendedor()">
+                            <option value="">Seleccionar vendedor</option>
+                            <!-- Opciones cargadas por JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <!-- DATOS DEL VENDEDOR AUTOMÁTICOS -->
+                    <div id="vendor-info" class="vendor-info" style="display: none;">
+                        <strong>Datos del Vendedor:</strong><br>
+                        <span id="vendor-email"></span><br>
+                        <span id="vendor-phone"></span>
+                    </div>
+                    
+                    <!-- PRODUCTO -->
+                    <div class="form-group">
+                        <select id="producto" required>
+                            <option value="">Seleccionar producto</option>
+                            <!-- Opciones cargadas por JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <!-- CANTIDAD -->
+                    <div class="form-group">
+                        <input type="number" id="cantidad" min="1" value="1" required>
+                    </div>
+                    
+                    <!-- OBSERVACIÓN -->
+                    <div class="form-group">
+                        <textarea id="nombres_personalizados" placeholder="Para velas personalizadas: escribe aquí los nombres Ejemplo (Jeronimo, Jussell, Ana) o coloca la palabra sin personalizar va por defecto las frases de lo contrario N/A"></textarea>
+                    </div>
+                    
+                    <button type="submit">Agregar al Carrito</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>🛒 Carrito de Compras</h2>
+                <div id="cart-container" class="cart-container">
+                    <div id="cart-items"></div>
+                    <div id="cart-total" class="cart-total">Total: $0</div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="medio_pago">Medio de Pago:</label>
+                        <select id="medio_pago" required onchange="handlePaymentMethodChange()">
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="NEQUI">Nequi</option>
+                            <option value="DAVIPLATA">Daviplata</option>
+                            <option value="ABONO">Abono</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="monto_abono_group" style="display: none;">
+                        <label for="monto_abono">Monto del Abono ($):</label>
+                        <input type="number" id="monto_abono" placeholder="Ingrese el valor del abono">
+                    </div>
+
+                    <button id="confirm-order" style="margin-top: 15px;" onclick="confirmOrder()">Confirmar Pedido</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sección Administrador -->
+        <div id="administrador-tab" class="tab-content">
+            <div class="admin-section">
+                <h2>🔐 Panel de Administración</h2>
+                <div id="login-notification"></div>
+                <div class="form-group">
+                    <label for="admin_email">Email de Administrador:</label>
+                    <input type="email" id="admin_email" placeholder="tu-admin@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="admin_password">Contraseña:</label>
+                    <input type="password" id="admin_password" placeholder="Contraseña de administrador">
+                </div>
+                <button onclick="loginAdmin()">Acceder como Administrador</button>
+            </div>
+            
+            <div id="admin-controls" style="display: none;">
+                <!-- Dashboard de administración -->
+                <div class="card">
+                    <h2>📊 Dashboard de Ventas e Inventario</h2>
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <div class="dashboard-title">📈 Estadísticas Generales</div>
+                            <div class="stats-number" id="total-pedidos">0</div>
+                            <div class="stats-label">Pedidos Totales</div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="dashboard-title">📦 Inventario Total</div>
+                            <div class="stats-number" id="total-stock">0</div>
+                            <div class="stats-label">Unidades Disponibles</div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="dashboard-title">💰 Ventas Totales</div>
+                            <div class="stats-number" id="total-ventas">$0</div>
+                            <div class="stats-label">Valor Total</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>🔄 Actualizar Inventario</h2>
+                    <div id="admin-notification"></div>
+                    <form id="inventory-update-form">
+                        <div class="form-group">
+                            <select id="update_producto" required>
+                                <option value="">Seleccionar producto</option>
+                                <!-- Opciones cargadas por JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="number" id="nuevo_stock" min="0" placeholder="Nuevo stock" required>
+                        </div>
+                        
+                        <button type="submit">Actualizar Stock</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>👥 Agregar Vendedor</h2>
+                    <div id="add-vendor-notification"></div>
+                    <form id="add-vendor-form">
+                        <div class="form-group">
+                            <input type="text" id="nombre_vendedor" placeholder="Nombre del vendedor" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="email" id="email_vendedor" placeholder="Email del vendedor" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="tel" id="telefono_vendedor" placeholder="Teléfono del vendedor">
+                        </div>
+                        
+                        <button type="submit">Agregar Vendedor</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>➕ Agregar Nuevo Producto</h2>
+                    <div id="add-product-notification"></div>
+                    <form id="add-product-form">
+                        <div class="form-group">
+                            <input type="text" id="nuevo_producto_nombre" placeholder="Nombre del nuevo producto" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="number" id="nuevo_producto_stock" min="0" value="10" placeholder="Stock inicial" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nueva_imagen_file">Subir imagen del producto:</label>
+                            <input type="file" id="nueva_imagen_file" accept="image/png, image/jpeg, image/webp" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="number" id="costo_publico" value="16000" placeholder="Costo Público ($)" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="number" id="costo_mayorista" value="13000" placeholder="Costo Mayorista ($)" required>
+                        </div>
+                        
+                        <button type="submit">Agregar Producto</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>🗑️ Eliminar Producto</h2>
+                    <div id="delete-product-notification"></div>
+                    <form id="delete-product-form">
+                        <div class="form-group">
+                            <select id="producto_a_eliminar" required>
+                                <option value="">Seleccionar producto a eliminar</option>
+                                <!-- Opciones cargadas por JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="delete-btn">Eliminar Producto</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>📋 Historial de Pedidos</h2>
+                    <table id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Vendedor</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Nombres Personalizados</th>
+                                <th>Fecha</th>
+                                <th>Medio de Pago</th>
+                                <th>Abono</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body">
+                            <!-- Datos cargados por JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card">
+                    <h2>📊 Productos por Ventas</h2>
+                    <table id="sales-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Ventas Totales</th>
+                                <th>Stock Actual</th>
+                                <th>Valor Estimado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-body">
+                            <!-- Datos cargados por JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 Sistema de Inventario de Velas - Versión Demo</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://uvfyjylzqkchrocrydkf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZnlqeWx6cWtjaHJvY3J5ZGtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwODc1NTQsImV4cCI6MjA3MTY2MzU1NH0.hiu5dsQP1c_0nf5EhAWxEIhZAFHzWs39lj5YvRetut4';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Variables globales para almacenar datos de la DB
+        let productos = [];
+        let vendedores = [];
+        let pedidos = [];
+        let carrito = [];
+        let vendedorSeleccionado = null;
+
+        // La contraseña de administrador ahora se gestiona directamente en Supabase.
+
+        // Función para calcular precio según cantidad total del carrito
+        function calcularPrecioGlobal(cantidadTotal) {
+            if (cantidadTotal >= 12) {
+                return 13000; // Mayorista
+            } else {
+                return 16000; // Público
+            }
+        }
+
+        // Función para mostrar notificaciones
+        function showNotification(message, isError = false, containerId = 'notification') {
+            const notification = document.getElementById(containerId);
+            notification.innerHTML = `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+            setTimeout(() => {
+                notification.innerHTML = '';
+            }, 3000);
+        }
+
+        // Función para mostrar notificaciones de admin
+        function showAdminNotification(message, isError = false, containerId = 'admin-notification') {
+            const notification = document.getElementById(containerId);
+            notification.innerHTML = `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+            setTimeout(() => {
+                notification.innerHTML = '';
+            }, 3000);
+        }
+
+        // --- Funciones de Carga de Datos desde Supabase ---
+        async function loadProductos() {
+            const { data, error } = await supabase
+                .from('productos')
+                .select('*');
+            if (error) {
+                console.error('Error al cargar productos:', error);
+                showNotification('Error al cargar productos.', true);
+            } else {
+                productos = data;
+                updateInventoryGrid();
+                updateProductSelector();
+            }
+        }
+
+        async function loadVendedores() {
+            const { data, error } = await supabase
+                .from('vendedores')
+                .select('*');
+            if (error) {
+                console.error('Error al cargar vendedores:', error);
+                showNotification('Error al cargar vendedores.', true);
+            } else {
+                vendedores = data;
+                updateVendorSelector();
+            }
+        }
+
+        async function loadPedidos() {
+            const { data, error } = await supabase
+                .from('pedidos')
+                .select('*, producto:productos(nombre), vendedor:vendedores(nombre)'); // Unir con nombres de producto y vendedor
+            if (error) {
+                console.error('Error al cargar pedidos:', error);
+                showNotification('Error al cargar pedidos.', true);
+            } else {
+                pedidos = data;
+                updateOrderHistory();
+                updateDashboard();
+            }
+        }
+
+        // --- Funciones de Actualización de UI ---
+        function updateInventoryGrid() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+            
+            productos.forEach(producto => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                
+                const stockClass = producto.stock <= 3 ? 'low' : '';
+                
+                card.innerHTML = `
+                    <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image">
+                    <div class="product-name">${producto.nombre}</div>
+                    <div class="product-stock ${stockClass}">Stock: ${producto.stock}</div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function updateProductSelector() {
+            const select = document.getElementById('producto');
+            const updateSelect = document.getElementById('update_producto');
+            const deleteSelect = document.getElementById('producto_a_eliminar');
+            
+            select.innerHTML = '<option value="">Seleccionar producto</option>';
+            updateSelect.innerHTML = '<option value="">Seleccionar producto</option>';
+            deleteSelect.innerHTML = '<option value="">Seleccionar producto a eliminar</option>';
+            
+            productos.forEach(producto => {
+                const option = document.createElement('option');
+                option.value = producto.id;
+                option.textContent = producto.nombre;
+                select.appendChild(option);
+                
+                const updateOption = document.createElement('option');
+                updateOption.value = producto.id;
+                updateOption.textContent = producto.nombre;
+                updateSelect.appendChild(updateOption);
+                
+                const deleteOption = document.createElement('option');
+                deleteOption.value = producto.id;
+                deleteOption.textContent = producto.nombre;
+                deleteSelect.appendChild(deleteOption);
+            });
+        }
+
+        function updateVendorSelector() {
+            const select = document.getElementById('vendedor');
+            
+            select.innerHTML = '<option value="">Seleccionar vendedor</option>';
+            
+            vendedores.forEach(vendedor => {
+                const option = document.createElement('option');
+                option.value = vendedor.id;
+                option.textContent = vendedor.nombre;
+                select.appendChild(option);
+            });
+        }
+
+        function cargarDatosVendedor() {
+            const vendedorId = parseInt(document.getElementById('vendedor').value);
+            const vendorInfo = document.getElementById('vendor-info');
+            
+            if (vendedorId) {
+                const vendedor = vendedores.find(v => v.id === vendedorId);
+                if (vendedor) {
+                    document.getElementById('vendor-email').textContent = `Email: ${vendedor.email}`;
+                    document.getElementById('vendor-phone').textContent = `Teléfono: ${vendedor.telefono}`;
+                    vendorInfo.style.display = 'block';
+                    vendedorSeleccionado = vendedor;
+                }
+            } else {
+                vendorInfo.style.display = 'none';
+                vendedorSeleccionado = null;
+            }
+        }
+
+        function updateOrderHistory() {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+            
+            pedidos.slice().reverse().forEach(pedido => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pedido.nombre_cliente || 'Cliente Anónimo'}</td>
+                    <td>${pedido.vendedor?.nombre || 'N/A'}</td>
+                    <td>${pedido.producto?.nombre || 'N/A'}</td>
+                    <td>${pedido.cantidad}</td>
+                    <td>${pedido.nombres_personalizados || '-'}</td>
+                    <td>${new Date(pedido.fecha).toLocaleString('es-ES')}</td>
+                    <td>${pedido.medio_pago || '-'}</td>
+                    <td>${pedido.monto_abono ? '$' + pedido.monto_abono.toLocaleString() : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateDashboard() {
+            const totalPedidos = pedidos.length;
+            const totalStock = productos.reduce((sum, prod) => sum + prod.stock, 0);
+            const totalVentas = pedidos.reduce((sum, pedido) => sum + pedido.total, 0);
+            
+            document.getElementById('total-pedidos').textContent = totalPedidos;
+            document.getElementById('total-stock').textContent = totalStock;
+            document.getElementById('total-ventas').textContent = '$' + totalVentas.toLocaleString();
+            
+            const salesBody = document.getElementById('sales-body');
+            salesBody.innerHTML = '';
+            
+            const ventasPorProducto = {};
+            pedidos.forEach(pedido => {
+                const productName = pedido.producto?.nombre || 'Desconocido';
+                if (!ventasPorProducto[productName]) {
+                    ventasPorProducto[productName] = { cantidad: 0, totalValor: 0 };
+                }
+                ventasPorProducto[productName].cantidad += pedido.cantidad;
+                ventasPorProducto[productName].totalValor += pedido.total;
+            });
+            
+            Object.entries(ventasPorProducto).forEach(([nombre, stats]) => {
+                const producto = productos.find(p => p.nombre === nombre);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${nombre}</td>
+                    <td>${stats.cantidad}</td>
+                    <td>${producto ? producto.stock : 'N/A'}</td>
+                    <td>$${stats.totalValor.toLocaleString()}</td>
+                `;
+                salesBody.appendChild(row);
+            });
+        }
+
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            
+            cartItems.innerHTML = '';
+            
+            if (carrito.length === 0) {
+                cartItems.innerHTML = '<p>El carrito está vacío</p>';
+                cartTotal.textContent = 'Total: $0';
+                return;
+            }
+            
+            let total = 0;
+            let totalUnidades = 0;
+            
+            carrito.forEach(item => {
+                totalUnidades += item.cantidad;
+            });
+            
+            const precioGlobal = calcularPrecioGlobal(totalUnidades);
+            
+            carrito.forEach((item, index) => {
+                const subtotal = item.cantidad * precioGlobal;
+                total += subtotal;
+                
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div>
+                        <strong>${item.producto.nombre}</strong><br>
+                        Cantidad: ${item.cantidad} | Precio: $${precioGlobal.toLocaleString()}
+                    </div>
+                    <div>
+                        Subtotal: $${subtotal.toLocaleString()}<br>
+                        <button class="remove-btn" onclick="removeFromCart(${index})">Eliminar</button>
+                    </div>
+                `;
+                cartItems.appendChild(itemElement);
+            });
+            
+            cartTotal.textContent = `Total: $${total.toLocaleString()}`;
+        }
+
+        // --- Funciones de Interacción con Supabase ---
+        async function addToCart(event) {
+            event.preventDefault();
+            
+            const productoId = parseInt(document.getElementById('producto').value);
+            const cantidad = parseInt(document.getElementById('cantidad').value);
+            const vendedorId = parseInt(document.getElementById('vendedor').value);
+            const nombres_personalizados = document.getElementById('nombres_personalizados').value;
+            
+            if (!productoId || isNaN(cantidad) || cantidad <= 0) {
+                showNotification('Por favor seleccione un producto y cantidad válida', true);
+                return;
+            }
+            
+            if (!vendedorId) {
+                showNotification('Por favor seleccione un vendedor', true);
+                return;
+            }
+            
+            const producto = productos.find(p => p.id === productoId);
+            
+            if (!producto) {
+                showNotification('Producto no encontrado', true);
+                return;
+            }
+            
+            if (producto.stock < cantidad) {
+                showNotification(`Stock insuficiente. Solo quedan ${producto.stock} unidades`, true);
+                return;
+            }
+            
+            const existingItem = carrito.find(item => item.producto.id === productoId);
+            
+            if (existingItem) {
+                existingItem.cantidad += cantidad;
+            } else {
+                carrito.push({
+                    producto: producto,
+                    cantidad: cantidad,
+                    nombres_personalizados: nombres_personalizados
+                });
+            }
+            
+            updateCart();
+            
+            document.getElementById('order-form').reset();
+            document.getElementById('vendor-info').style.display = 'none';
+            
+            showNotification('Producto agregado al carrito!');
+        }
+
+        function removeFromCart(index) {
+            carrito.splice(index, 1);
+            updateCart();
+            showNotification('Producto eliminado del carrito');
+        }
+
+        function handlePaymentMethodChange() {
+            const paymentMethod = document.getElementById('medio_pago').value;
+            const abonoGroup = document.getElementById('monto_abono_group');
+            if (paymentMethod === 'ABONO') {
+                abonoGroup.style.display = 'block';
+            } else {
+                abonoGroup.style.display = 'none';
+            }
+        }
+
+        async function confirmOrder() {
+            if (carrito.length === 0) {
+                showNotification('El carrito está vacío', true);
+                return;
+            }
+            
+            if (!vendedorSeleccionado) {
+                showNotification('Por favor seleccione un vendedor', true);
+                return;
+            }
+
+            const medioPago = document.getElementById('medio_pago').value;
+            const montoAbonoInput = document.getElementById('monto_abono');
+            let montoAbono = montoAbonoInput.value ? parseFloat(montoAbonoInput.value) : null;
+
+            if (medioPago === 'ABONO' && (!montoAbono || montoAbono <= 0)) {
+                showNotification('Por favor ingrese un monto de abono válido.', true);
+                return;
+            }
+            
+            if (!confirm('¿Desea confirmar este pedido?')) {
+                return;
+            }
+            
+            let totalGeneral = 0;
+            let totalUnidades = 0;
+            
+            carrito.forEach(item => {
+                totalUnidades += item.cantidad;
+            });
+            
+            const precioGlobal = calcularPrecioGlobal(totalUnidades);
+            
+            // Procesar cada item y guardarlo en la base de datos
+            for (const item of carrito) {
+                const subtotal = item.cantidad * precioGlobal;
+                totalGeneral += subtotal;
+                
+                const { data, error } = await supabase
+                    .from('pedidos')
+                    .insert([
+                        {
+                            nombre_cliente: 'Cliente Anónimo',
+                            vendedor_id: vendedorSeleccionado.id,
+                            producto_id: item.producto.id,
+                            cantidad: item.cantidad,
+                            nombres_personalizados: item.nombres_personalizados,
+                            precio_unitario: precioGlobal,
+                            total: subtotal,
+                            fecha: new Date().toISOString(),
+                            medio_pago: medioPago,
+                            monto_abono: montoAbono
+                        }
+                    ]);
+                
+                if (error) {
+                    console.error('Error al guardar pedido:', error);
+                    showNotification(`Error al procesar el pedido de ${item.producto.nombre}.`, true);
+                    return; 
+                }
+            }
+            
+            // Recargar todos los datos después de la operación
+            carrito = [];
+            updateCart();
+            await loadProductos();
+            await loadPedidos();
+            
+            showNotification(`Pedido confirmado! Total: $${totalGeneral.toLocaleString()}`);
+        }
+
+        async function updateInventory(event) {
+            event.preventDefault();
+            
+            const productoId = parseInt(document.getElementById('update_producto').value);
+            const nuevoStock = parseInt(document.getElementById('nuevo_stock').value);
+            
+            if (!productoId || isNaN(nuevoStock)) {
+                showAdminNotification('Por favor seleccione un producto y ingrese un stock válido', true);
+                return;
+            }
+            
+            const { data, error } = await supabase
+                .from('productos')
+                .update({ stock: nuevoStock })
+                .eq('id', productoId);
+            
+            if (error) {
+                console.error('Error al actualizar stock:', error);
+                showAdminNotification('Error al actualizar stock.', true);
+            } else {
+                await loadProductos(); // Recargar productos para ver el stock actualizado
+                updateDashboard();
+                document.getElementById('inventory-update-form').reset();
+                showAdminNotification('Stock actualizado correctamente!');
+            }
+        }
+
+        async function addProduct(event) {
+            event.preventDefault();
+            
+            const nombre = document.getElementById('nuevo_producto_nombre').value;
+            const stock = parseInt(document.getElementById('nuevo_producto_stock').value);
+            const costoPublico = parseFloat(document.getElementById('costo_publico').value);
+            const costoMayorista = parseFloat(document.getElementById('costo_mayorista').value);
+            const imageFile = document.getElementById('nueva_imagen_file').files[0];
+
+            if (!nombre || isNaN(stock) || !imageFile || isNaN(costoPublico) || isNaN(costoMayorista)) {
+                showAdminNotification('Por favor complete todos los campos y seleccione una imagen.', true, 'add-product-notification');
+                return;
+            }
+
+            // 1. Subir la imagen a Supabase Storage
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `${Date.now()}.${fileExt}`;
+            const filePath = `public/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('imagenes_productos') // El nombre de tu bucket
+                .upload(filePath, imageFile);
+
+            if (uploadError) {
+                console.error('Error al subir imagen:', uploadError);
+                showAdminNotification('Error al subir la imagen.', true, 'add-product-notification');
+                return;
+            }
+
+            // 2. Obtener la URL pública de la imagen
+            const { data: urlData } = supabase.storage
+                .from('imagenes_productos')
+                .getPublicUrl(filePath);
+
+            if (!urlData) {
+                showAdminNotification('Error al obtener la URL de la imagen.', true, 'add-product-notification');
+                return;
+            }
+            const publicURL = urlData.publicUrl;
+
+            // 3. Insertar el producto en la base de datos con la URL de la imagen
+            const { data, error: insertError } = await supabase
+                .from('productos')
+                .insert([
+                    {
+                        nombre: nombre,
+                        stock: stock,
+                        imagen: publicURL, // Usar la URL de Supabase Storage
+                        costo_publico: costoPublico,
+                        costo_mayorista: costoMayorista
+                    }
+                ]);
+            
+            if (insertError) {
+                console.error('Error al agregar producto:', insertError);
+                showAdminNotification(`Error al agregar producto: ${insertError.message}`, true, 'add-product-notification');
+            } else {
+                await loadProductos(); // Recargar productos
+                document.getElementById('add-product-form').reset();
+                showAdminNotification('¡Producto agregado exitosamente!');
+            }
+        }
+
+        async function deleteProduct(event) {
+            event.preventDefault();
+            
+            const productoId = parseInt(document.getElementById('producto_a_eliminar').value);
+            
+            if (!productoId) {
+                showAdminNotification('Por favor seleccione un producto a eliminar', true);
+                return;
+            }
+            
+            if (!confirm('¿Está seguro que desea eliminar este producto? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            // Primero, eliminar pedidos asociados a este producto para evitar errores de clave foránea
+            const { error: deletePedidosError } = await supabase
+                .from('pedidos')
+                .delete()
+                .eq('producto_id', productoId);
+
+            if (deletePedidosError) {
+                console.error('Error al eliminar pedidos asociados:', deletePedidosError);
+                showAdminNotification('Error al eliminar pedidos asociados al producto.', true);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('productos')
+                .delete()
+                .eq('id', productoId);
+            
+            if (error) {
+                console.error('Error al eliminar producto:', error);
+                showAdminNotification('Error al eliminar producto.', true);
+            } else {
+                await loadProductos(); // Recargar productos
+                await loadPedidos(); // Recargar pedidos
+                updateDashboard();
+                document.getElementById('delete-product-form').reset();
+                showAdminNotification('Producto eliminado exitosamente!');
+            }
+        }
+
+        async function addVendor(event) {
+            event.preventDefault();
+            
+            const nombre = document.getElementById('nombre_vendedor').value;
+            const email = document.getElementById('email_vendedor').value;
+            const telefono = document.getElementById('telefono_vendedor').value;
+            
+            if (!nombre || !email) {
+                showAdminNotification('Por favor complete todos los campos requeridos', true);
+                return;
+            }
+            
+            const { data, error } = await supabase
+                .from('vendedores')
+                .insert([
+                    {
+                        nombre: nombre,
+                        email: email,
+                        telefono: telefono
+                    }
+                ]);
+            
+            if (error) {
+                console.error('Error al agregar vendedor:', error);
+                showAdminNotification('Error al agregar vendedor.', true);
+            } else {
+                await loadVendedores(); // Recargar vendedores
+                document.getElementById('add-vendor-form').reset();
+                showAdminNotification('Vendedor agregado exitosamente!');
+            }
+        }
+
+        // Función para login de administrador
+        async function loginAdmin() {
+            const email = document.getElementById('admin_email').value;
+            const password = document.getElementById('admin_password').value;
+            
+            if (!email || !password) {
+                showNotification('Por favor, ingrese email y contraseña.', true, 'login-notification');
+                return;
+            }
+
+            // Iniciar sesión en Supabase
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                console.error('Error de inicio de sesión:', error);
+                showNotification(`Error: ${error.message}`, true, 'login-notification');
+            } else {
+                console.log('Inicio de sesión exitoso');
+                // Ocultar el formulario de login y mostrar los controles de administrador
+                const loginSection = document.querySelector('#administrador-tab .admin-section');
+                if (loginSection) {
+                    loginSection.style.display = 'none';
+                }
+                
+                document.getElementById('admin-controls').style.display = 'block';
+                showAdminNotification('Acceso concedido. Bienvenido, administrador.');
+                
+                // Cargar todos los datos que requiere el admin, que ya se cargan al inicio
+                // pero podemos recargarlos por si acaso.
+                await loadProductos();
+                await loadVendedores();
+                await loadPedidos();
+            }
+        }
+
+        // Función para cambiar de pestaña
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Cargar datos iniciales desde Supabase
+            await loadProductos();
+            await loadVendedores();
+            await loadPedidos();
+            
+            updateCart(); // Inicializar carrito vacío
+            
+            // Eventos de formularios
+            document.getElementById('order-form').addEventListener('submit', addToCart);
+            document.getElementById('inventory-update-form').addEventListener('submit', updateInventory);
+            document.getElementById('add-product-form').addEventListener('submit', addProduct);
+            document.getElementById('delete-product-form').addEventListener('submit', deleteProduct);
+            document.getElementById('add-vendor-form').addEventListener('submit', addVendor);
+        });
+    </script>
+</body>
+</html>
