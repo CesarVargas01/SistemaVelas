@@ -4,9 +4,18 @@
     <div>
       <h3 class="text-2xl font-bold text-gray-900 mb-6">Productos Disponibles</h3>
       
-      <div v-if="store.productos.length === 0" class="text-center py-12">
-        <div class="text-gray-400 text-6xl mb-4">📦</div>
-        <p class="text-gray-500 text-lg">No hay productos disponibles</p>
+      <div v-if="store.productos.length === 0" class="text-center py-16">
+        <div class="text-gray-400 text-8xl mb-6" role="img" aria-label="Caja vacía">📦</div>
+        <h4 class="text-xl font-semibold text-gray-700 mb-2">No hay productos disponibles</h4>
+        <p class="text-gray-500 mb-6">Comienza agregando tu primer producto al inventario</p>
+        <router-link 
+          to="/admin" 
+          class="btn-primary inline-flex items-center space-x-2"
+          aria-label="Ir al panel de administración para agregar productos"
+        >
+          <span aria-hidden="true">➕</span>
+          <span>Agregar Primer Producto</span>
+        </router-link>
       </div>
       
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

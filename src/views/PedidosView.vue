@@ -39,6 +39,9 @@
         <!-- Información del Cliente -->
         <div class="card">
           <h3 class="text-xl font-semibold mb-4">👥 Información del Cliente</h3>
+          <div class="text-xs text-gray-500 mb-4 bg-blue-50 p-2 rounded">
+            💡 El celular debe tener 10 dígitos y empezar con 3 (ej: 3001234567)
+          </div>
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -68,14 +71,23 @@
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                Celular
+                Celular *
               </label>
               <input
                 v-model="clienteCelular"
                 type="tel"
-                placeholder="Número de celular"
+                placeholder="3001234567 (10 dígitos)"
                 class="input-field"
+                :class="{ 'border-red-500': celularError }"
+                maxlength="10"
+                @input="validateCelular"
               />
+              <div v-if="celularError" class="text-red-500 text-xs mt-1">
+                {{ celularError }}
+              </div>
+              <div v-else-if="clienteCelular && !celularError" class="text-green-500 text-xs mt-1">
+                ✅ Número válido
+              </div>
             </div>
           </div>
         </div>
@@ -210,24 +222,55 @@
               </label>
               <select v-model="medioPago" class="select-field">
                 <option value="">Seleccionar medio de pago</option>
-                <option value="EFECTIVO">Efectivo</option>
-                <option value="TRANSFERENCIA">Transferencia</option>
-                <option value="ABONO">Abono</option>
+                <option value="EFECTIVO">💵 Efectivo</option>
+                <option value="NEQUI">📱 Nequi</option>
+                <option value="DAVIPLATA">📱 Daviplata</option>
+                <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                <option value="ABONO">💰 Abono (Pago Parcial)</option>
               </select>
             </div>
             
-            <div v-if="medioPago === 'ABONO'">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Monto del Abono
-              </label>
-              <input
-                v-model.number="montoAbono"
-                type="number"
-                min="0"
-                :max="store.totalCarrito"
-                class="input-field"
-                placeholder="Monto del abono"
-              />
+            <!-- Información de monto según el tipo de pago -->
+            <div v-if="medioPago && medioPago !== ''" class="bg-gray-50 p-4 rounded-lg space-y-3">
+              <div v-if="medioPago === 'ABONO'">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  💰 Monto del Abono
+                </label>
+                <input
+                  v-model.number="montoAbono"
+                  type="number"
+                  min="0"
+                  :max="store.totalCarrito"
+                  class="input-field"
+                  placeholder="¿Cuánto abona el cliente?"
+                />
+                <div class="mt-2 text-sm text-gray-600">
+                  <div class="flex justify-between">
+                    <span>Total del pedido:</span>
+                    <span class="font-medium">{{ formatCurrency(store.totalCarrito) }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Monto abonado:</span>
+                    <span class="font-medium text-green-600">{{ formatCurrency(montoAbono || 0) }}</span>
+                  </div>
+                  <div class="flex justify-between border-t pt-1">
+                    <span>Saldo pendiente:</span>
+                    <span class="font-bold text-red-600">{{ formatCurrency(store.totalCarrito - (montoAbono || 0)) }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-else>
+                <div class="text-sm text-gray-600">
+                  <div class="flex justify-between items-center">
+                    <span>💳 Monto a cancelar:</span>
+                    <span class="text-lg font-bold text-green-600">{{ formatCurrency(store.totalCarrito) }}</span>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    Pago completo con {{ medioPago.toLowerCase() }}
+                  </div>
+                </div>
+              </div>
             </div>
             
             <button
@@ -262,6 +305,7 @@ const medioPago = ref('')
 const montoAbono = ref(null)
 const clientSearchResults = ref([])
 const selectedClient = ref(null)
+const celularError = ref('')
 
 // Computed properties
 const selectedVendedor = computed(() => {
@@ -287,6 +331,8 @@ const canConfirmOrder = computed(() => {
   return store.carrito.length > 0 && 
          selectedVendedorId.value && 
          clienteNombre.value.trim() && 
+         clienteCelular.value.trim() &&
+         !celularError.value &&
          medioPago.value &&
          (medioPago.value !== 'ABONO' || (montoAbono.value > 0 && montoAbono.value <= store.totalCarrito))
 })
@@ -309,19 +355,59 @@ const selectClient = (cliente) => {
   clienteNombre.value = cliente.nombre
   clienteCelular.value = cliente.celular || ''
   clientSearchResults.value = []
+  validateCelular()
+}
+
+const validateCelular = () => {
+  const celular = clienteCelular.value.trim()
+  
+  if (!celular) {
+    celularError.value = 'El celular es obligatorio'
+    return
+  }
+  
+  // Solo números
+  if (!/^\d+$/.test(celular)) {
+    celularError.value = 'Solo se permiten números'
+    return
+  }
+  
+  // Exactamente 10 dígitos
+  if (celular.length !== 10) {
+    celularError.value = 'Debe tener exactamente 10 dígitos'
+    return
+  }
+  
+  // Mayor a 3000000000
+  const numero = parseInt(celular)
+  if (numero < 3000000000) {
+    celularError.value = 'Debe ser mayor a 3000000000'
+    return
+  }
+  
+  // Debe empezar con 3
+  if (!celular.startsWith('3')) {
+    celularError.value = 'Los celulares en Colombia empiezan con 3'
+    return
+  }
+  
+  celularError.value = ''
 }
 
 const addToCart = () => {
   if (!canAddToCart.value) return
   
-  store.addToCart(selectedProduct.value, cantidad.value, nombresPersonalizados.value)
+  const agregado = store.addToCart(selectedProduct.value, cantidad.value, nombresPersonalizados.value)
   
-  // Limpiar formulario
-  selectedProductoId.value = ''
-  cantidad.value = 1
-  nombresPersonalizados.value = ''
-  
-  window.showNotification('Producto agregado al carrito')
+  if (agregado) {
+    // Limpiar formulario solo si se agregó exitosamente
+    selectedProductoId.value = ''
+    cantidad.value = 1
+    nombresPersonalizados.value = ''
+    
+    window.showNotification('✅ Producto agregado', `${selectedProduct.value.nombre} agregado al carrito`)
+  }
+  // Si no se agregó, el error ya se mostró en el store
 }
 
 const confirmOrder = async () => {
@@ -356,22 +442,79 @@ const confirmOrder = async () => {
       }
     }
     
-    // Crear pedidos
-    const pedidosAInsertar = store.carrito.map(item => ({
-      cliente_id: finalClientId,
-      vendedor_id: selectedVendedorId.value,
-      producto_id: item.producto.id,
-      cantidad: item.cantidad,
-      nombres_personalizados: item.nombres_personalizados,
-      precio_unitario: store.precioGlobal,
-      total: item.cantidad * store.precioGlobal,
-      fecha: new Date().toISOString(),
-      medio_pago: medioPago.value,
-      monto_abono: medioPago.value === 'ABONO' ? montoAbono.value : null,
-      valor_cancelado: medioPago.value !== 'ABONO' ? item.cantidad * store.precioGlobal : null
-    }))
+    console.log('📝 Validando stock disponible...')
     
-    const { error } = await supabase.from('pedidos').insert(pedidosAInsertar)
+    // Validar stock antes de crear pedidos
+    const stockInsuficiente = []
+    for (const item of store.carrito) {
+      const producto = store.productos.find(p => p.id === item.producto.id)
+      if (!producto) {
+        throw new Error(`Producto ${item.producto.nombre} no encontrado`)
+      }
+      
+      if (producto.stock < item.cantidad) {
+        stockInsuficiente.push({
+          nombre: producto.nombre,
+          solicitado: item.cantidad,
+          disponible: producto.stock
+        })
+      }
+    }
+    
+    // Si hay productos con stock insuficiente, mostrar error
+    if (stockInsuficiente.length > 0) {
+      let mensaje = '❌ Stock insuficiente para:\n\n'
+      stockInsuficiente.forEach(item => {
+        mensaje += `• ${item.nombre}: Solicitado ${item.solicitado}, Disponible ${item.disponible}\n`
+      })
+      mensaje += '\nPor favor ajusta las cantidades o verifica el inventario.'
+      
+      window.showError('❌ Stock Insuficiente', mensaje)
+      return
+    }
+    
+    console.log('✅ Stock validado correctamente')
+    console.log('📝 Preparando pedidos para insertar...')
+    
+    // Crear pedidos con estructura mejorada
+    const pedidosAInsertar = store.carrito.map(item => {
+      const itemTotal = item.cantidad * store.precioGlobal
+      const pedido = {
+        cliente_id: finalClientId,
+        vendedor_id: selectedVendedorId.value,
+        producto_id: item.producto.id,
+        cantidad: item.cantidad,
+        precio_unitario: store.precioGlobal,
+        total: itemTotal,
+        fecha: new Date().toISOString(),
+        medio_pago: medioPago.value,
+        estado: 'PENDIENTE'
+      }
+      
+      // Agregar campos opcionales solo si tienen valor
+      if (item.nombres_personalizados && item.nombres_personalizados.trim()) {
+        pedido.nombres_personalizados = item.nombres_personalizados.trim()
+      }
+      
+      if (medioPago.value === 'ABONO') {
+        pedido.monto_abono = montoAbono.value || 0
+        pedido.valor_cancelado = 0
+      } else {
+        pedido.monto_abono = 0
+        pedido.valor_cancelado = itemTotal
+      }
+      
+      return pedido
+    })
+    
+    console.log('📋 Pedidos a insertar:', pedidosAInsertar)
+    
+    const { data, error } = await supabase
+      .from('pedidos')
+      .insert(pedidosAInsertar)
+      .select()
+    
+    console.log('✅ Respuesta de Supabase:', { data, error })
     
     if (error) throw error
     
@@ -388,8 +531,25 @@ const confirmOrder = async () => {
     )
     
   } catch (error) {
-    console.error('Error confirmando pedido:', error)
-    window.showError('Error al confirmar pedido', error.message)
+    console.error('❌ Error confirmando pedido:', error)
+    
+    let errorMessage = 'Error desconocido'
+    
+    if (error.code === '23505') {
+      if (error.details && error.details.includes('monto_abono')) {
+        errorMessage = 'Error: Restricción incorrecta en monto_abono. Ejecuta el script fix_unique_constraint.sql'
+      } else {
+        errorMessage = 'Error: Pedido duplicado. Intenta nuevamente.'
+      }
+    } else if (error.code === '23503') {
+      errorMessage = 'Error: Datos de referencia inválidos (cliente, vendedor o producto).'
+    } else if (error.code === '42703') {
+      errorMessage = 'Error: Estructura de tabla incorrecta. Ejecuta el script fix_pedidos_table.sql'
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    window.showError('❌ Error al confirmar pedido', errorMessage)
   }
 }
 
@@ -404,6 +564,7 @@ const resetForm = () => {
   montoAbono.value = null
   clientSearchResults.value = []
   selectedClient.value = null
+  celularError.value = ''
 }
 
 const formatCurrency = (value) => {

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario de Velas</title>
+                <link rel="stylesheet" href="/static/style.css"/>
+    </head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <h1>🏪 Sistema de Inventario de Velas</h1>
+                <p class="subtitle">Gestiona tus productos y pedidos de forma eficiente</p>
+            </header>
+            
+            <div class="tabs">
+                <button class="tab" :class="{ active: activeTab === 'cliente' }" @click="activeTab = 'cliente'">Hacer Pedido</button>
+                <button class="tab" :class="{ active: activeTab === 'administrador' }" @click="activeTab = 'administrador'">Administrador</button>
+            </div>
+            
+            <!-- Sección Pedidos -->
+            <div id="cliente-tab" class="tab-content" :class="{ active: activeTab === 'cliente' }">
+                <div class="card">
+                    <h2>📊 Inventario Actual</h2>
+                    <div class="products-grid">
+                        <div class="product-card" v-for="producto in productos" :key="producto.id">
+                            <img :src="producto.imagen" :alt="producto.nombre" class="product-image">
+                            <div class="product-name">{{ producto.nombre }}</div>
+                            <div class="product-stock" :class="{ low: producto.stock <= 3 }">Stock: {{ producto.stock }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>📦 Hacer Pedido</h2>
+                                        <app-notification :show="clientNotification.show" :message="clientNotification.message" :is-error="clientNotification.isError" />
+                    <form @submit.prevent="addToCart">
+                        <!-- CLIENTE -->
+                        <div class="form-group">
+                            <label for="cliente_nombre">Nombre del Cliente:</label>
+                            <input type="text" id="cliente_nombre" v-model="formClienteNombre" @keyup="searchClient" placeholder="Buscar o agregar cliente..." required>
+                            <div id="client-search-results"></div>
+                        </div>
+                        <div class="form-group">
+                             <label for="cliente_celular">Celular del Cliente:</label>
+                            <input type="tel" id="cliente_celular" v-model="formClienteCelular" placeholder="Celular para nuevo cliente">
+                        </div>
+    
+                        <!-- VENDEDOR -->
+                        <div class="form-group">
+                            <select id="vendedor" v-model.number="formVendedorId" required @change="cargarDatosVendedor">
+                                <option value="">Seleccionar vendedor</option>
+                                <option v-for="vendedor in vendedores" :value="vendedor.id">{{ vendedor.nombre }}</option>
+                            </select>
+                        </div>
+                        
+                        <!-- DATOS DEL VENDEDOR AUTOMÁTICOS -->
+                        <div id="vendor-info" class="vendor-info" v-if="vendedorSeleccionado">
+                            <strong>Datos del Vendedor:</strong><br>
+                            <span>Email: {{ vendedorSeleccionado.email }}</span><br>
+                            <span>Teléfono: {{ vendedorSeleccionado.telefono }}</span>
+                        </div>
+                        
+                        <!-- PRODUCTO -->
+                        <div class="form-group">
+                            <select id="producto" v-model.number="formProductoId" required>
+                                <option value="">Seleccionar producto</option>
+                                <option v-for="producto in productos" :value="producto.id">{{ producto.nombre }}</option>
+                            </select>
+                        </div>
+                        
+                        <!-- CANTIDAD -->
+                        <div class="form-group">
+                            <input type="number" id="cantidad" v-model.number="formCantidad" min="1" required>
+                        </div>
+                        
+                        <!-- OBSERVACIÓN -->
+                        <div class="form-group">
+                            <textarea id="nombres_personalizados" v-model="formNombresPersonalizados" placeholder="Para velas personalizadas: escribe aquí los nombres Ejemplo (Jeronimo, Jussell, Ana) o coloca la palabra sin personalizar va por defecto las frases de lo contrario N/A"></textarea>
+                        </div>
+                        
+                        <button type="submit">Agregar al Carrito</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>🛒 Carrito de Compras</h2>
+                    <div id="cart-container" class="cart-container">
+                        <div id="cart-items">
+                            <p v-if="carrito.length === 0">El carrito está vacío</p>
+                            <div class="cart-item" v-for="(item, index) in carrito" :key="index">
+                                <div>
+                                    <strong>{{ item.producto.nombre }}</strong><br>
+                                    Cantidad: {{ item.cantidad }} | Precio: {{ formatCurrency(precioGlobal) }}
+                                </div>
+                                <div>
+                                    Subtotal: {{ formatCurrency(item.cantidad * precioGlobal) }}<br>
+                                    <button class="remove-btn" @click="removeFromCart(index)">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cart-total">Total: {{ formatCurrency(totalCarrito) }}</div>
+    
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label for="medio_pago">Medio de Pago:</label>
+                            <select id="medio_pago" v-model="formMedioPago" required>
+                                <option value="">Seleccione un medio de pago</option>
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="NEQUI">Nequi</option>
+                                <option value="DAVIPLATA">Daviplata</option>
+                                <option value="ABONO">Abono</option>
+                            </select>
+                        </div>
+    
+                        <div class="form-group" v-if="formMedioPago === 'ABONO'">
+                            <label for="monto_abono">Monto del Abono ($):</label>
+                            <input type="number" id="monto_abono" v-model.number="formMontoAbono" placeholder="Ingrese el valor del abono">
+                        </div>
+    
+                        <div class="form-group" v-if="['EFECTIVO', 'NEQUI', 'DAVIPLATA'].includes(formMedioPago)">
+                            <label for="valor_cancelado">Valor Cancelado ($):</label>
+                            <input type="number" id="valor_cancelado" v-model.number="formValorCancelado" placeholder="Ingrese el valor cancelado">
+                        </div>
+    
+                        <button id="confirm-order" style="margin-top: 15px;" @click="confirmOrder">Confirmar Pedido</button>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Sección Administrador -->
+            <div id="administrador-tab" class="tab-content" :class="{ active: activeTab === 'administrador' }">
+                <div class="admin-section" v-if="!isAdminLoggedIn">
+                    <h2>🔐 Panel de Administración</h2>
+                    <div id="login-notification"></div>
+                    <div class="form-group">
+                        <label for="admin_email">Email de Administrador:</label>
+                        <input type="email" id="admin_email" placeholder="tu-admin@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin_password">Contraseña:</label>
+                        <input type="password" id="admin_password" placeholder="Contraseña de administrador">
+                    </div>
+                    <button @click="loginAdmin">Acceder como Administrador</button>
+                </div>
+                
+                <div id="admin-controls" v-if="isAdminLoggedIn">
+                    <div class="card">
+                        <h2>📊 Dashboard de Ventas e Inventario</h2>
+                        <div class="dashboard-grid">
+                            <div class="dashboard-card">
+                                <div class="dashboard-title">📈 Estadísticas Generales</div>
+                                <div class="stats-number">{{ pedidos.length }}</div>
+                                <div class="stats-label">Pedidos Totales</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-title">📦 Inventario Total</div>
+                                <div class="stats-number">{{ totalStock }}</div>
+                                <div class="stats-label">Unidades Disponibles</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-title">💰 Ventas Totales</div>
+                                <div class="stats-number">{{ formatCurrency(totalVentas) }}</div>
+                                <div class="stats-label">Valor Total</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-grid-pair">
+                        <div class="card">
+                            <h2>🔄 Actualizar Inventario</h2>
+                            <app-notification :show="adminNotification.show" :message="adminNotification.message" :is-error="adminNotification.isError" />
+                            <form @submit.prevent="updateInventory" id="inventory-update-form">
+                                <div class="form-group">
+                                    <select id="update_producto" required>
+                                        <option value="">Seleccionar producto</option>
+                                        <option v-for="producto in productos" :value="producto.id">{{ producto.nombre }}</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <input type="number" id="nuevo_stock" min="0" placeholder="Nuevo stock" required>
+                                </div>
+                                
+                                <button type="submit">Actualizar Stock</button>
+                            </form>
+                        </div>
+                        
+                        <div class="card">
+                            <h2>👥 Agregar Vendedor</h2>
+                            
+                            <form @submit.prevent="addVendor">
+                                <div class="form-group">
+                                    <input type="text" id="nombre_vendedor" placeholder="Nombre del vendedor" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <input type="email" id="email_vendedor" placeholder="Email del vendedor" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <input type="tel" id="telefono_vendedor" placeholder="Teléfono del vendedor">
+                                </div>
+                                
+                                <button type="submit">Agregar Vendedor</button>
+                            </form>
+                        </div>
+                    </div>
+    
+                    <div class="admin-grid-pair">
+                        <div class="card">
+                            <h2>➕ Agregar Nuevo Producto</h2>
+                            
+                            <form @submit.prevent="addProduct" id="add-product-form">
+                                <div class="form-group">
+                                    <input type="text" id="nuevo_producto_nombre" placeholder="Nombre del nuevo producto" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <input type="number" id="nuevo_producto_stock" min="0" value="10" placeholder="Stock inicial" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="nueva_imagen_file">Subir imagen del producto:</label>
+                                    <input type="file" id="nueva_imagen_file" accept="image/png, image/jpeg, image/webp" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <input type="number" id="costo_publico" v-model.number="formCostoPublico" placeholder="Costo Público ($)" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <input type="number" id="costo_mayorista" v-model.number="formCostoMayorista" placeholder="Costo Mayorista ($)" required>
+                                </div>
+                                
+                                <button type="submit">Agregar Producto</button>
+                            </form>
+                        </div>
+                        
+                        <div class="card">
+                            <h2>🗑️ Eliminar Producto</h2>
+                            
+                            <form @submit.prevent="deleteProduct" id="delete-product-form">
+                                <div class="form-group">
+                                    <label for="producto_a_eliminar">Producto a eliminar:</label>
+                                    <select id="producto_a_eliminar" v-model="formProductoAEliminar" required>
+                                        <option value="">Seleccionar producto a eliminar</option>
+                                        <option v-for="producto in productos" :key="producto.id" :value="producto.id">
+                                            {{ producto.nombre }} (Stock: {{ producto.stock }})
+                                        </option>
+                                    </select>
+                                </div>
+                                
+                                <div v-if="formProductoAEliminar" class="product-preview">
+                                    <h4>Vista previa del producto a eliminar:</h4>
+                                    <div class="product-info">
+                                        <img :src="selectedProductToDelete?.imagen" :alt="selectedProductToDelete?.nombre" class="preview-image">
+                                        <div>
+                                            <strong>{{ selectedProductToDelete?.nombre }}</strong><br>
+                                            Stock actual: {{ selectedProductToDelete?.stock }}<br>
+                                            <span class="warning-text">⚠️ Esta acción eliminará permanentemente el producto y todos sus pedidos asociados</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="delete-btn" :disabled="!formProductoAEliminar">
+                                    🗑️ Eliminar Producto
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2>📋 Historial de Pedidos</h2>
+                        <div class="table-responsive-wrapper">
+                            <table id="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Vendedor</th>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Nombres Personalizados</th>
+                                        <th>Fecha</th>
+                                        <th>Medio de Pago</th>
+                                        <th>Abono</th>
+                                        <th>Valor Cancelado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="pedido in pedidos" :key="pedido.id">
+                                        <td>{{ pedido.cliente ? pedido.cliente.nombre : 'Cliente Anónimo' }}</td>
+                                        <td>{{ pedido.vendedor ? pedido.vendedor.nombre : 'N/A' }}</td>
+                                        <td>{{ pedido.producto ? pedido.producto.nombre : 'N/A' }}</td>
+                                        <td>{{ pedido.cantidad }}</td>
+                                        <td class="personalized-cell" :title="pedido.nombres_personalizados || '-'">{{ pedido.nombres_personalizados || '-' }}</td>
+                                        <td>{{ new Date(pedido.fecha).toLocaleString('es-ES') }}</td>
+                                        <td>{{ pedido.medio_pago || '-' }}</td>
+                                        <td>{{ pedido.monto_abono ? formatCurrency(pedido.monto_abono) : '-' }}</td>
+                                        <td>{{ pedido.valor_cancelado ? formatCurrency(pedido.valor_cancelado) : '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2>📊 Productos por Ventas</h2>
+                        <div class="table-responsive-wrapper">
+                            <table id="sales-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Ventas Totales</th>
+                                        <th>Stock Actual</th>
+                                        <th>Valor Estimado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="venta in ventasPorProducto" :key="venta.nombre">
+                                        <td>{{ venta.nombre }}</td>
+                                        <td>{{ venta.cantidad }}</td>
+                                        <td>{{ venta.stock }}</td>
+                                        <td>{{ formatCurrency(venta.totalValor) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+    
+                    <div class="card">
+                        <h2>📊 Ventas por Vendedor</h2>
+                        <div class="table-responsive-wrapper">
+                            <table id="vendor-sales-table">
+                                <thead>
+                                    <tr>
+                                        <th>Vendedor</th>
+                                        <th>Pedidos Totales</th>
+                                        <th>Valor Total de Ventas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="venta in ventasPorVendedor" :key="venta.nombre">
+                                        <td>{{ venta.nombre }}</td>
+                                        <td>{{ venta.cantidad }}</td>
+                                        <td>{{ formatCurrency(venta.totalValor) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>© 2024 Sistema de Inventario de Velas - Versión Demo</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/static/app_simple.js"></script>
+</body>
+</html>

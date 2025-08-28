@@ -102,12 +102,15 @@ export const useMainStore = defineStore('main', () => {
         .select(`
           *,
           producto:productos(nombre),
-          vendedor:vendedores(nombre),
-          cliente:clientes(nombre)
+          vendedor:vendedores(nombre, email),
+          cliente:clientes(nombre, celular)
         `)
         .order('fecha', { ascending: false })
 
       if (supabaseError) throw supabaseError
+      
+      console.log('📊 Pedidos cargados desde DB:', data?.length || 0)
+      console.log('🔍 Primeros 3 pedidos:', data?.slice(0, 3))
       
       pedidos.value = data || []
       return handleSupabaseSuccess(data, 'Pedidos cargados')
@@ -129,8 +132,38 @@ export const useMainStore = defineStore('main', () => {
 
   // Acciones del carrito
   const addToCart = (producto, cantidad, nombresPersonalizados = '') => {
-    const existingItem = carrito.value.find(item => item.producto.id === producto.id)
+    // Validar que el producto tenga stock suficiente
+    if (producto.stock <= 0) {
+      if (window.showError) {
+        window.showError('❌ Sin Stock', `${producto.nombre} no tiene stock disponible`)
+      } else {
+        alert(`❌ Sin Stock: ${producto.nombre} no tiene stock disponible`)
+      }
+      return false
+    }
     
+    const existingItem = carrito.value.find(item => item.producto.id === producto.id)
+    const cantidadTotal = existingItem ? existingItem.cantidad + cantidad : cantidad
+    
+    // Validar que no exceda el stock disponible
+    if (cantidadTotal > producto.stock) {
+      const disponible = producto.stock - (existingItem ? existingItem.cantidad : 0)
+      const mensaje = `❌ Stock insuficiente:\n\n` +
+        `Producto: ${producto.nombre}\n` +
+        `Stock disponible: ${producto.stock} unidades\n` +
+        `Ya en carrito: ${existingItem ? existingItem.cantidad : 0} unidades\n` +
+        `Disponible para agregar: ${disponible} unidades\n` +
+        `Intentando agregar: ${cantidad} unidades`
+      
+      if (window.showError) {
+        window.showError('❌ Stock Insuficiente', mensaje)
+      } else {
+        alert(mensaje)
+      }
+      return false
+    }
+    
+    // Agregar al carrito si pasa las validaciones
     if (existingItem) {
       existingItem.cantidad += cantidad
     } else {
@@ -140,6 +173,8 @@ export const useMainStore = defineStore('main', () => {
         nombres_personalizados: nombresPersonalizados
       })
     }
+    
+    return true
   }
 
   const removeFromCart = (index) => {

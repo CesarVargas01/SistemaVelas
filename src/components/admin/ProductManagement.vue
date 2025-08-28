@@ -11,7 +11,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div v-for="producto in store.productos" :key="producto.id" class="card group hover:scale-105 transition-transform duration-200">
         <!-- Imagen del producto -->
-        <div class="aspect-square mb-4 overflow-hidden rounded-lg bg-gray-100">
+        <div class="aspect-square mb-1 overflow-hidden rounded-lg bg-gray-100">
           <img
             :src="producto.imagen"
             :alt="producto.nombre"
@@ -21,28 +21,31 @@
         </div>
 
         <!-- Información del producto -->
-        <div class="space-y-2">
-          <h3 class="font-semibold text-lg text-gray-900">
-            {{ producto.nombre }}
-          </h3>
+        <div class="space-y-0.5">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg px-3 py-2 border border-blue-100">
+            <h3 class="font-bold text-base text-gray-900 text-center leading-tight min-h-[2.25rem] flex items-center justify-center">
+              {{ producto.nombre }}
+            </h3>
+          </div>
           
-          <!-- Stock Badge más grande y vistoso -->
-          <div class="flex justify-center mt-3">
-            <span 
+          <!-- Stock Badge del mismo tamaño que el botón -->
+          <div class="mt-0.5">
+            <div 
               :class="[
-                'px-4 py-2 rounded-full text-sm font-bold shadow-md',
+                'w-full px-3 py-2 rounded-lg text-sm font-medium text-center',
                 producto.stock > 10 ? 'bg-green-500 text-white' :
                 producto.stock > 0 ? 'bg-yellow-500 text-white' :
                 'bg-red-500 text-white'
               ]"
+              :aria-label="`Stock disponible: ${producto.stock} unidades`"
             >
-              📦 {{ producto.stock }} unidades
-            </span>
+              <span aria-hidden="true">📦</span> {{ producto.stock }} unidades
+            </div>
           </div>
         </div>
 
         <!-- Botón de acción -->
-        <div class="mt-4">
+        <div class="mt-1">
           <button
             @click="editProduct(producto)"
             class="w-full btn-secondary text-sm"
@@ -310,6 +313,7 @@ const saveProduct = async () => {
     loading.value = false
   }
 }
+
 
 
 

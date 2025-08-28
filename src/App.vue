@@ -1,12 +1,12 @@
 <template>
   <div id="app" class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg">
-      <div class="container mx-auto px-4 py-6">
+    <header class="bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg" role="banner">
+      <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="text-center flex-1">
             <h1 class="text-3xl md:text-4xl font-bold mb-2">
-              🏪 Sistema de Inventario de Velas
+              <span aria-hidden="true">🏪</span> Sistema de Inventario de Velas
             </h1>
             <p class="text-lg opacity-90">
               Gestiona tus productos y pedidos de forma eficiente
@@ -17,7 +17,7 @@
     </header>
 
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b">
+    <nav class="bg-white shadow-sm border-b" role="navigation" aria-label="Navegación principal">
       <div class="container mx-auto px-4">
         <div class="flex space-x-1">
           <router-link
@@ -26,6 +26,7 @@
             :to="link.path"
             class="px-6 py-4 text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200 font-medium"
             :class="{ 'text-primary-600 border-b-2 border-primary-600': $route.path === link.path }"
+            :aria-current="$route.path === link.path ? 'page' : undefined"
           >
             {{ link.label }}
           </router-link>
@@ -34,7 +35,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-8" role="main">
       <!-- Loading Spinner -->
       <div v-if="store.loading" class="flex justify-center items-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
