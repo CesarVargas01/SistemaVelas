@@ -66,13 +66,13 @@
 
     <!-- Modal Agregar/Editar Producto -->
     <div v-if="showAddModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
+      <div class="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-8">
           <div class="flex items-center justify-between mb-4">
-            <h4 class="text-xl font-semibold">
+            <h4 class="text-2xl font-bold text-gray-900">
               {{ showEditModal ? 'Editar Producto' : 'Agregar Producto' }}
             </h4>
-            <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
+            <button @click="closeModal" class="text-gray-400 hover:text-gray-600 text-2xl font-bold p-2 hover:bg-gray-100 rounded-full transition-colors">
               ✕
             </button>
           </div>

@@ -200,11 +200,11 @@
 
     <!-- Modal de Detalles del Pedido -->
     <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
+      <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-8">
           <div class="flex items-center justify-between mb-4">
-            <h4 class="text-xl font-semibold">Detalles del Pedido</h4>
-            <button @click="showDetailsModal = false" class="text-gray-400 hover:text-gray-600">
+            <h4 class="text-2xl font-bold text-gray-900">Detalles del Pedido</h4>
+            <button @click="showDetailsModal = false" class="text-gray-400 hover:text-gray-600 text-2xl font-bold p-2 hover:bg-gray-100 rounded-full transition-colors">
               ✕
             </button>
           </div>
@@ -280,11 +280,11 @@
 
     <!-- Modal para Completar Pago -->
     <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg max-w-md w-full">
-        <div class="p-6">
+      <div class="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-8">
           <div class="flex items-center justify-between mb-4">
-            <h4 class="text-xl font-semibold">💰 Completar Pago</h4>
-            <button @click="showPaymentModal = false" class="text-gray-400 hover:text-gray-600">
+            <h4 class="text-2xl font-bold text-gray-900">💰 Completar Pago</h4>
+            <button @click="showPaymentModal = false" class="text-gray-400 hover:text-gray-600 text-2xl font-bold p-2 hover:bg-gray-100 rounded-full transition-colors">
               ✕
             </button>
           </div>

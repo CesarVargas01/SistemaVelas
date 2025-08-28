@@ -476,8 +476,9 @@ const confirmOrder = async () => {
     console.log('✅ Stock validado correctamente')
     console.log('📝 Preparando pedidos para insertar...')
     
-    // Crear pedidos con estructura mejorada
-    const pedidosAInsertar = store.carrito.map(item => {
+    // Crear pedidos con estructura mejorada y distribución proporcional del abono
+    const totalCarrito = store.totalCarrito
+    const pedidosAInsertar = store.carrito.map((item, index) => {
       const itemTotal = item.cantidad * store.precioGlobal
       const pedido = {
         cliente_id: finalClientId,
@@ -497,7 +498,20 @@ const confirmOrder = async () => {
       }
       
       if (medioPago.value === 'ABONO') {
-        pedido.monto_abono = montoAbono.value || 0
+        // Distribuir el abono proporcionalmente entre todos los productos
+        const proporcion = itemTotal / totalCarrito
+        const abonoProporcionado = Math.round((montoAbono.value || 0) * proporcion)
+        
+        console.log(`💰 Distribuyendo abono para ${item.producto.nombre}:`, {
+          itemTotal,
+          totalCarrito,
+          proporcion: (proporcion * 100).toFixed(2) + '%',
+          abonoTotal: montoAbono.value,
+          abonoProporcionado,
+          calculo: `${montoAbono.value} × ${proporcion.toFixed(4)} = ${abonoProporcionado}`
+        })
+        
+        pedido.monto_abono = abonoProporcionado
         pedido.valor_cancelado = 0
       } else {
         pedido.monto_abono = 0
