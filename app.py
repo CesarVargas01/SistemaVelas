@@ -16,10 +16,7 @@ url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
-# Ruta para servir el archivo HTML principal
-@app.route('/')
-def serve_html():
-    return render_template('index.html')
+
 
 # --- Rutas de la API (ejemplos que crearemos a continuación) ---
 
