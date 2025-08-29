@@ -44,13 +44,19 @@
           </div>
         </div>
 
-        <!-- Botón de acción -->
-        <div class="mt-1">
+        <!-- Botones de acción -->
+        <div class="mt-1 grid grid-cols-2 gap-1">
           <button
             @click="editProduct(producto)"
             class="w-full btn-secondary text-sm"
           >
-            ✏️ Editar Producto
+            ✏️ Editar
+          </button>
+          <button
+            @click="confirmDelete(producto)"
+            class="w-full btn-danger text-sm"
+          >
+            🗑️ Eliminar
           </button>
         </div>
       </div>
@@ -64,6 +70,7 @@
       </button>
     </div>
 
+    <!-- Modal Agregar/Editar Producto -->
     <!-- Modal Agregar/Editar Producto -->
     <div v-if="showAddModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -151,7 +158,7 @@
               />
               <input
                 v-else
-                @change="handleImageUpload"
+                @change.prevent="handleImageUpload"
                 type="file"
                 accept="image/*"
                 class="input-field"
@@ -176,7 +183,31 @@
       </div>
     </div>
 
-
+    <!-- Modal Eliminar Producto -->
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg max-w-md w-full shadow-2xl">
+        <div class="p-8 text-center">
+          <div class="text-red-500 text-5xl mb-4">
+            🗑️
+          </div>
+          <h4 class="text-2xl font-bold text-gray-900 mb-2">
+            ¿Estás seguro?
+          </h4>
+          <p class="text-gray-600 mb-6">
+            Estás a punto de eliminar el producto <strong>"{{ productToDelete.nombre }}"</strong>. Esta acción no se puede deshacer.
+          </p>
+          <div class="flex space-x-3">
+            <button @click="deleteProduct" :disabled="loading" class="flex-1 btn-danger disabled:opacity-50">
+              <span v-if="loading">Eliminando...</span>
+              <span v-else>Sí, eliminar</span>
+            </button>
+            <button @click="closeModal" class="flex-1 btn-secondary">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -184,15 +215,19 @@
 import { ref, reactive } from 'vue'
 import { useMainStore } from '@/stores/main'
 import { supabase } from '@/lib/supabase'
+import { useNotificationStore } from '@/stores/notifications'
 
 const store = useMainStore()
+const notificationStore = useNotificationStore()
 
 // Estado de modales
 const showAddModal = ref(false)
 const showEditModal = ref(false)
+const showDeleteModal = ref(false)
 const loading = ref(false)
 const imagePreview = ref('')
 const selectedFile = ref(null)
+const productToDelete = ref(null)
 
 // Formularios
 const productForm = reactive({
@@ -208,7 +243,41 @@ const productForm = reactive({
 const closeModal = () => {
   showAddModal.value = false
   showEditModal.value = false
+  showDeleteModal.value = false
   resetForm()
+}
+
+const confirmDelete = (producto) => {
+  productToDelete.value = producto
+  showDeleteModal.value = true
+}
+
+const deleteProduct = async () => {
+  if (!productToDelete.value) return
+  try {
+    loading.value = true
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No estás autenticado.')
+    const token = session.access_token
+
+    const response = await fetch(`/api/productos/${productToDelete.value.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    const result = await response.json()
+    if (!response.ok) throw new Error(result.error)
+
+    notificationStore.showSuccess('¡Éxito!', result.message)
+    await store.loadProductos()
+    closeModal()
+  } catch (error) {
+    notificationStore.showError('Error al eliminar', error.message)
+  } finally {
+    loading.value = false
+  }
 }
 
 const resetForm = () => {
@@ -291,7 +360,7 @@ const saveProduct = async () => {
       
       if (error) throw error
       
-      alert('Producto actualizado exitosamente')
+      notificationStore.showSuccess('¡Éxito!', 'Producto actualizado exitosamente')
     } else {
       // Crear producto
       const { error } = await supabase
@@ -300,7 +369,7 @@ const saveProduct = async () => {
       
       if (error) throw error
       
-      alert('Producto agregado exitosamente')
+      notificationStore.showSuccess('¡Éxito!', 'Producto agregado exitosamente')
     }
     
     await store.loadProductos()
@@ -308,7 +377,7 @@ const saveProduct = async () => {
     
   } catch (error) {
     console.error('Error guardando producto:', error)
-    alert('Error al guardar producto: ' + error.message)
+    notificationStore.showError('Error al guardar', error.message)
   } finally {
     loading.value = false
   }

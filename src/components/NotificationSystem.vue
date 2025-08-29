@@ -1,7 +1,7 @@
 <template>
   <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 space-y-3 w-full max-w-4xl px-4">
     <div
-      v-for="notification in notifications"
+      v-for="notification in store.notifications"
       :key="notification.id"
       :class="[
         'max-w-4xl w-full bg-white shadow-2xl rounded-xl pointer-events-auto ring-1 ring-black ring-opacity-10 overflow-hidden transform transition-all duration-500',
@@ -27,7 +27,7 @@
           </div>
           <div class="ml-6 flex-shrink-0">
             <button
-              @click="removeNotification(notification.id)"
+              @click="store.removeNotification(notification.id)"
               class="bg-white rounded-full inline-flex text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none p-3 transition-colors"
             >
               <span class="sr-only">Cerrar</span>
@@ -50,55 +50,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { useNotificationStore } from '@/stores/notifications'
 
-const notifications = ref([])
-let notificationId = 0
-
-const addNotification = (type, title, message = '', duration = 10000) => {
-  const id = ++notificationId
-  const notification = {
-    id,
-    type,
-    title,
-    message,
-    show: false,
-    progress: 100
-  }
-  
-  notifications.value.push(notification)
-  
-  // Mostrar notificación
-  setTimeout(() => {
-    notification.show = true
-  }, 100)
-  
-  // Animar barra de progreso
-  const startTime = Date.now()
-  const updateProgress = () => {
-    const elapsed = Date.now() - startTime
-    const remaining = Math.max(0, duration - elapsed)
-    notification.progress = (remaining / duration) * 100
-    
-    if (remaining > 0) {
-      requestAnimationFrame(updateProgress)
-    } else {
-      removeNotification(id)
-    }
-  }
-  
-  requestAnimationFrame(updateProgress)
-}
-
-const removeNotification = (id) => {
-  const index = notifications.value.findIndex(n => n.id === id)
-  if (index > -1) {
-    notifications.value[index].show = false
-    setTimeout(() => {
-      notifications.value.splice(index, 1)
-    }, 300)
-  }
-}
+const store = useNotificationStore()
 
 const getIcon = (type) => {
   switch (type) {
@@ -139,12 +93,4 @@ const getProgressBarFillClass = (type) => {
     default: return 'bg-gray-500'
   }
 }
-
-// Exponer métodos globalmente
-onMounted(() => {
-  window.showNotification = (title, message) => addNotification('success', title, message)
-  window.showError = (title, message) => addNotification('error', title, message)
-  window.showWarning = (title, message) => addNotification('warning', title, message)
-  window.showInfo = (title, message) => addNotification('info', title, message)
-})
 </script>

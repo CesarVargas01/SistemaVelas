@@ -1,7 +1,9 @@
 import os
+from functools import wraps
 from dotenv import load_dotenv
 from flask import Flask, render_template, url_for, jsonify, request
 from supabase import create_client, Client
+import re
 
 # Cargar variables de entorno desde .env
 load_dotenv()
@@ -16,102 +18,123 @@ url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
+# Decorador para verificar la autenticación
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({'error': 'Authorization header missing'}), 401
 
+        try:
+            token = auth_header.split(" ")[1]
+            user = supabase.auth.get_user(token)
+            if not user:
+                return jsonify({'error': 'Invalid token'}), 401
+        except Exception as e:
+            return jsonify({'error': 'Authentication failed', 'details': str(e)}), 401
 
-# --- Rutas de la API (ejemplos que crearemos a continuación) ---
+        return f(*args, **kwargs)
+    return decorated_function
 
-# Ejemplo de cómo obtener todos los productos
+# --- Rutas de la API ---
+
 @app.route('/api/productos', methods=['GET'])
 def get_productos():
     try:
         response = supabase.table('productos').select("*").execute()
-        # La data está en response.data
         return jsonify(response.data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Endpoint para eliminar producto (solución temporal para RLS)
-@app.route('/api/productos/<int:producto_id>', methods=['DELETE'])
+@app.route('/api/productos/<producto_id>', methods=['DELETE'])
+@auth_required
 def delete_producto(producto_id):
     try:
-        # 1. Obtener información del producto antes de eliminar
+        # Validar que el producto_id sea un UUID válido
+        try:
+            from uuid import UUID
+            UUID(producto_id)
+        except ValueError:
+            return jsonify({'error': 'ID de producto inválido'}), 400
+
         producto_response = supabase.table('productos').select("*").eq('id', producto_id).execute()
         if not producto_response.data:
             return jsonify({'error': 'Producto no encontrado'}), 404
         
         producto = producto_response.data[0]
         
-        # 2. Eliminar pedidos asociados
-        pedidos_response = supabase.table('pedidos').delete().eq('producto_id', producto_id).execute()
+        supabase.table('pedidos').delete().eq('producto_id', producto_id).execute()
         
-        # 3. Eliminar imagen del storage si existe
         if producto.get('imagen') and 'supabase' in producto['imagen']:
             try:
-                image_path = producto['imagen'].split('/')[-1]
-                supabase.storage.from_('imagenes_productos').remove([f'public/{image_path}'])
+                # Extraer el path de la imagen de forma más robusta
+                image_path = '/'.join(producto['imagen'].split('/')[-2:])
+                supabase.storage.from_('imagenes_productos').remove([image_path])
             except Exception as img_error:
                 print(f"Error eliminando imagen: {img_error}")
         
-        # 4. Eliminar producto
-        delete_response = supabase.table('productos').delete().eq('id', producto_id).execute()
+        supabase.table('productos').delete().eq('id', producto_id).execute()
         
         return jsonify({
             'success': True, 
             'message': f'Producto "{producto["nombre"]}" eliminado exitosamente',
-            'deleted_product': producto
         })
         
     except Exception as e:
         return jsonify({'error': f'Error al eliminar producto: {str(e)}'}), 500
 
-# Endpoint para agregar vendedor (solución temporal para RLS)
 @app.route('/api/vendedores', methods=['POST'])
+@auth_required
 def add_vendedor():
     try:
-        print("🔥 Endpoint /api/vendedores llamado")
         data = request.get_json()
-        print(f"📝 Datos recibidos: {data}")
         
-        if not data or not data.get('nombre') or not data.get('email'):
-            print("❌ Datos faltantes")
-            return jsonify({'error': 'Nombre y email son requeridos'}), 400
+        # Validación de datos
+        errors = {}
+        if not data or not data.get('nombre') or len(data['nombre'].strip()) < 3:
+            errors['nombre'] = 'El nombre es requerido y debe tener al menos 3 caracteres.'
         
+        email = data.get('email')
+        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            errors['email'] = 'El email no es válido.'
+        
+        telefono = data.get('telefono', '')
+        if telefono and not re.match(r"^\+?[0-9\s-]{7,15}$", telefono):
+            errors['telefono'] = 'El número de teléfono no es válido.'
+
+        if errors:
+            return jsonify({'error': 'Datos inválidos', 'details': errors}), 400
+
+        # Limpieza de datos
+        clean_nombre = data['nombre'].strip()
+        clean_email = email.lower().strip()
+        clean_telefono = telefono.strip()
+
         # Verificar si ya existe un vendedor con ese email
-        print(f"🔍 Verificando email existente: {data['email']}")
-        existing_response = supabase.table('vendedores').select("*").eq('email', data['email']).execute()
-        print(f"📋 Vendedores existentes: {existing_response.data}")
-        
+        existing_response = supabase.table('vendedores').select("id").eq('email', clean_email).execute()
         if existing_response.data:
-            print("❌ Email duplicado")
-            return jsonify({'error': 'Ya existe un vendedor con este email'}), 400
+            return jsonify({'error': 'Ya existe un vendedor con este email'}), 409 # 409 Conflict
         
         # Insertar nuevo vendedor
-        print("📤 Insertando nuevo vendedor...")
         insert_data = {
-            'nombre': data['nombre'],
-            'email': data['email'],
-            'telefono': data.get('telefono', '')
+            'nombre': clean_nombre,
+            'email': clean_email,
+            'telefono': clean_telefono
         }
-        print(f"📦 Datos a insertar: {insert_data}")
         
         insert_response = supabase.table('vendedores').insert([insert_data]).execute()
-        print(f"📥 Respuesta de inserción: {insert_response}")
         
         if insert_response.data:
-            print("✅ Vendedor insertado exitosamente")
             return jsonify({
                 'success': True,
-                'message': f'Vendedor "{data["nombre"]}" agregado exitosamente',
+                'message': f'Vendedor "{clean_nombre}" agregado exitosamente',
                 'vendedor': insert_response.data[0]
-            })
+            }), 201 # 201 Created
         else:
-            print("❌ No se pudo insertar el vendedor")
-            return jsonify({'error': 'Error al insertar vendedor'}), 500
+            return jsonify({'error': 'No se pudo insertar el vendedor'}), 500
         
     except Exception as e:
-        print(f"❌ Error en add_vendedor: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': f'Error al agregar vendedor: {str(e)}'}), 500
 
 # --- Fin de rutas de la API ---

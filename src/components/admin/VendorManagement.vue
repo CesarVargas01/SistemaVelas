@@ -124,8 +124,10 @@
 import { ref, reactive } from 'vue'
 import { useMainStore } from '@/stores/main'
 import { supabase } from '@/lib/supabase'
+import { useNotificationStore } from '@/stores/notifications'
 
 const store = useMainStore()
+const notificationStore = useNotificationStore()
 
 // Estado de modales
 const showAddModal = ref(false)
@@ -171,9 +173,16 @@ const saveVendor = async () => {
       email: vendorForm.email,
       telefono: vendorForm.telefono || null
     }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      throw new Error('No estás autenticado.')
+    }
+    const token = session.access_token
     
     if (showEditModal.value) {
-      // Actualizar vendedor
+      // La edición aún puede usar Supabase directamente si las políticas RLS lo permiten.
+      // Por ahora, solo la creación usará el backend.
       const { error } = await supabase
         .from('vendedores')
         .update(vendorData)
@@ -181,16 +190,25 @@ const saveVendor = async () => {
       
       if (error) throw error
       
-      alert('Vendedor actualizado exitosamente')
+      notificationStore.showSuccess('¡Éxito!', 'Vendedor actualizado exitosamente')
     } else {
-      // Crear vendedor
-      const { error } = await supabase
-        .from('vendedores')
-        .insert([vendorData])
+      // Crear vendedor a través del backend
+      const response = await fetch('/api/vendedores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(vendorData)
+      })
       
-      if (error) throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error desconocido del servidor')
+      }
       
-      alert('Vendedor agregado exitosamente')
+      notificationStore.showSuccess('¡Éxito!', result.message)
     }
     
     await store.loadVendedores()
@@ -198,7 +216,7 @@ const saveVendor = async () => {
     
   } catch (error) {
     console.error('Error guardando vendedor:', error)
-    alert('Error al guardar vendedor: ' + error.message)
+    notificationStore.showError('Error al guardar', error.message)
   } finally {
     loading.value = false
   }
